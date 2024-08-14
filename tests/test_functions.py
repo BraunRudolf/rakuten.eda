@@ -42,9 +42,14 @@ def dataframe_htlml_cols():
                          "column1": ['text', '<h1>text</h1>', '<h1>text</h1>', 'no html'],
                          "column2": ['<p>test</p> more text <p>test</p>',
                                      '<b>text</b>', '<b>text< not a tag', '<p> neither a tag is this > but this </p>']})
+@pytest.fixture()
+def dataframe_duplicated_cols():
+    return pd.DataFrame({"class": [1, 1, 4, 2, 3],
+                         "column1": ['text', 'text', 'text', 'text2', 'text3'],
+                         "column2": ['text', 'text', 'text', 'text2', 'text3']})
 
+# Test Combine Columns
 def test_combine_columns_str_col(dataframe_str_cols):
-    print(dataframe_str_cols[['column1', 'column2']].dtypes)
     df = func.combine_str_columns(dataframe_str_cols, ['column1', 'column2'])
     assert df['combined'].tolist() == ['a a', 'b b', 'c c']
 
@@ -56,6 +61,23 @@ def test_combine_columns_none_value(dataframe_none):
     with pytest.raises(ValueError, match="Column has null values."):
         func.combine_str_columns(dataframe_none, ['column1', 'column2'])
 
+# Test merge dataframes
+def test_merge_dataframe_on_idnex(dataframe_str_cols, dataframe_int_cols):
+    df = func.merge_dataframes(dataframe_str_cols, dataframe_int_cols, how='left', index_true=True)
+    assert all(df.columns == ['class_x', 'column1_x', 'column2_x', 'class_y', 'column1_y', 'column2_y'])
+    assert dataframe_str_cols.shape[0] == df.shape[0]
+    assert df['class_x'].tolist() == [1, 1, 2]
+    assert df['class_y'].tolist() == [1, 1, 2]
+
+def test_merge_dataframe_duplicated_on(dataframe_str_cols, dataframe_int_cols):
+    with pytest.raises(ValueError, match="Column content is not unique."):
+        func.merge_dataframes(dataframe_str_cols, dataframe_int_cols,on='class', how='left')
+
+def test_merge_on_col(dataframe_str_cols):
+    df = func.merge_dataframes(dataframe_str_cols, dataframe_str_cols, on='column1', how='left')
+    assert all(df.columns == ['class_x', 'column1', 'column2_x', 'class_y', 'column2_y'])
+    assert dataframe_str_cols.shape[0] == df.shape[0]
+
 def test_null_values_zero(dataframe_str_cols):
     assert all(func.null_values(dataframe_str_cols) == pd.Series({'class': 0, 'column1': 0, 'column2': 0}))
 
@@ -63,10 +85,10 @@ def test_null_values_one(dataframe_none):
     assert all(func.null_values(dataframe_none) == pd.Series({'class': 1, 'column1': 1, 'column2': 0}))
 
 def test_class_distribution_ok(dataframe_str_cols):
-    assert all(func.class_distribution(dataframe_str_cols, 'class') == pd.Series({1: 2, 2: 1}))
+    assert all(func.class_distribution_abs(dataframe_str_cols, 'class') == pd.Series({1: 2, 2: 1}))
 
 def test_class_distribution_none(dataframe_none):
-    assert all(func.class_distribution(dataframe_none, 'class') == pd.Series({1: 1, 2: 1}))
+    assert all(func.class_distribution_abs(dataframe_none, 'class') == pd.Series({1: 1, 2: 1}))
 
 def test_punctuation_ratio(dataframe_str_punct_cols):
     assert all(round(func.punctuation_ratio(dataframe_str_punct_cols, 'column1'),2) == pd.Series({0: 0.5, 1: 0.67, 2: 0.67}))
@@ -101,3 +123,7 @@ def test_group_by_class(dataframe_htlml_cols):
     dataframe_htlml_cols['num_html_tags'] = func.html_tag_count(dataframe_htlml_cols, 'column1')
     print(dataframe_htlml_cols.head())
     assert all(dataframe_htlml_cols.groupby('class')['num_html_tags'].sum() == pd.Series({1: 2, 2: 2, 3: 0}))
+
+def test_count_entries_with_same_text_different_prdtypecode(dataframe_duplicated_cols):
+    assert func.count_entries_with_same_text_different_prdtypecode(dataframe_duplicated_cols, ['column1', 'column2'], ['class', 'column1', 'column2']) == 1
+

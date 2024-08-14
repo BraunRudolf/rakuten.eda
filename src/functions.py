@@ -1,6 +1,20 @@
 import pandas as pd
 import re
 
+def merge_dataframes(df1, df2, how, on=None, index_true=False):
+    if on is not None:
+        if (df1[on].nunique() != df1[on].shape[0]) or (df2[on].nunique() != df2[on].shape[0]):
+            raise ValueError("Column content is not unique.")
+        return pd.merge(df1, df2, on=on, how=how)
+    if index_true:
+        return pd.merge(df1, df2, left_index=True, right_index=True, how=how)
+    else:
+        return pd.merge(df1, df2, on=on, how=how)
+
+def fill_null_values(df, column_name, fill_value):
+    df[column_name] = df[column_name].fillna(fill_value)
+    return df
+
 # TODO: return new columns instead of results
 def combine_str_columns(df, column_names, new_column_name="combined", sep=' '):
     """
@@ -24,8 +38,22 @@ def combine_str_columns(df, column_names, new_column_name="combined", sep=' '):
 def null_values(df):
     return df.isnull().sum()
 
-def class_distribution(df, column_name):
+def class_distribution_abs(df, column_name):
     return df[column_name].value_counts()
+
+def duplicated_column(df):
+    duplicated_cols = {}
+    for col in df.columns:
+        duplicated_cols[col] = df[col].duplicated().sum()
+    return duplicated_cols
+
+def count_entries_with_same_text_different_prdtypecode(df, cols_short:list, cols_long:list):
+    duplicated_products = df[cols_short].duplicated().sum()
+    duplicated_products_prdtypecode = df[cols_long].duplicated().sum()
+    return duplicated_products - duplicated_products_prdtypecode
+
+def class_distribution_rel(df, column_name):
+    return df[column_name].value_counts(normalize=True)
 
 def count_punctuation(text):
     return len(re.findall(r'[^\w\s]', text))
