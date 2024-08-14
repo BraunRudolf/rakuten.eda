@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 
+# TODO: return new columns instead of results
 def combine_str_columns(df, column_names, new_column_name="combined", sep=' '):
     """
     Combines multiple string columns into a single column
@@ -58,8 +59,7 @@ def html_tag_count(df, column_name):
     # TODO: compare to bs4 implementation
     return df[column_name].str.count(r'<[^>]+>')
 
-def group_by_class(df, class_col, func, *args, **kwargs):
-    # TODO: Add support for multiple columns
-    return df.groupby(class_col).apply(lambda x: func(x, *args, **kwargs))
+def group_by_class(df, class_col, group_cols, func:list):
+    return df.groupby(class_col).apply(lambda x: x[group_cols].agg(func))
 
 
