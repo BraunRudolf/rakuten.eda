@@ -9,6 +9,7 @@ packages = [{include = "rakuten"}]
 [tool.poetry.dependencies]
 python = "^3.12"
 pandas = "^2.2.2"
+spacy = "^3.7.5"
 
 
 [tool.poetry.group.dev.dependencies]

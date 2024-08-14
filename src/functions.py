@@ -36,16 +36,30 @@ def punctuation_ratio(df, column_name):
 def string_lenght(df, column_name):
     return df[column_name].str.len()
 
-def word_count(df, column_name):
-    return df[column_name].str.split().str.len()
+def count_words(text, spacy_nlp):
+    doc = spacy_nlp(text)
+    return len([token for token in doc if token.is_alpha])
 
-def sentence_count(df, column_name):
-    return df[column_name].str.count(r'[.!?]')
+def word_count(df, column_name, spacy_nlp):
+    # NOTE: Spacy doesn't recognizes 'w/o' as a word
+    # TODO: Check text for special words
+    return df[column_name].apply(lambda x: count_words(x, spacy_nlp))
+
+def count_sentence_in_text(spacy_nlp, text):
+    if text is None:
+        return 0
+    doc = spacy_nlp(text)
+    return len(list(doc.sents))
+
+def count_sentences(df, column_name, spacy_nlp):
+    return df[column_name].apply(lambda x: count_sentence_in_text(spacy_nlp, x))
 
 def html_tag_count(df, column_name):
+    # TODO: compare to bs4 implementation
     return df[column_name].str.count(r'<[^>]+>')
 
-def group_by_class(df, class_col, func):
-    return df.groupby(class_col).apply(func)
+def group_by_class(df, class_col, func, *args, **kwargs):
+    # TODO: Add support for multiple columns
+    return df.groupby(class_col).apply(lambda x: func(x, *args, **kwargs))
 
 
