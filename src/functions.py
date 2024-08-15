@@ -1,5 +1,8 @@
 import pandas as pd
 import re
+from tqdm import tqdm 
+
+tqdm.pandas()
 
 def merge_dataframes(df1, df2, how, on=None, index_true=False):
     if on is not None:
@@ -67,12 +70,28 @@ def string_lenght(df, column_name):
 
 def count_words(text, spacy_nlp):
     doc = spacy_nlp(text)
+    # TODO: check if spacy is able to recognize 'w/o'
+    return  sum(1 for token in doc if token.is_alpha)
+    # TODO: both methods
     return len([token for token in doc if token.is_alpha])
 
 def word_count(df, column_name, spacy_nlp):
     # NOTE: Spacy doesn't recognizes 'w/o' as a word
     # TODO: Check text for special words
-    return df[column_name].apply(lambda x: count_words(x, spacy_nlp))
+
+    return df[column_name].progress_apply(lambda x: count_words(x, spacy_nlp))
+
+# quick, rough count using the regex
+def count_words_regex(text,pattern=r"\b[\w'-]+\b"):
+    words = re.findall(pattern, text)
+    return len(words)
+
+def word_count_regex(df, column_name, pattern=r"\b[\w'-]+\b"):
+    # NOTE: Spacy doesn't recognizes 'w/o' as a word
+    # TODO: Check text for special words
+
+    return df[column_name].progress_apply(lambda x: count_words_regex(x, pattern))
+
 
 def count_sentence_in_text(spacy_nlp, text):
     if text is None:
